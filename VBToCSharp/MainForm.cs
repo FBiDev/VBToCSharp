@@ -1,24 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace VBToCSharp
 {
-    public partial class Main : Form
+    public partial class MainForm : Form
     {
         private List<List<string>> cReplace = new List<List<string>>();
         private List<List<string>> cBetween = new List<List<string>>();
         private List<List<string>> cPull = new List<List<string>>();
         private List<List<string>> cPush = new List<List<string>>();
 
-        public Main()
+        public MainForm()
         {
             InitializeComponent();
 
@@ -29,8 +23,15 @@ namespace VBToCSharp
             cReplace.Add(new List<string> { "Protected ", "protected " });
             cReplace.Add(new List<string> { "Partial ", "partial " });
             cReplace.Add(new List<string> { " Class ", " class " });
+            
             cReplace.Add(new List<string> { " ReadOnly ", " readonly " });
+            cReplace.Add(new List<string> { " WriteOnly ", " " });
+            
+
             cReplace.Add(new List<string> { " Const ", " const " });
+
+            cReplace.Add(new List<string> { " Event ", " event " });
+            cReplace.Add(new List<string> { " RaiseEvent ", " " });
 
 
             cReplace.Add(new List<string> { "= My.Settings.", "= Settings.Default." });
@@ -70,6 +71,7 @@ namespace VBToCSharp
             cReplace.Add(new List<string> { " New ", " new " });
             cReplace.Add(new List<string> { "(New ", "(new " });
             cReplace.Add(new List<string> { " DbDataReader", " IDataReader" });
+            cReplace.Add(new List<string> { " Data.SqlClient.", " " });
             cReplace.Add(new List<string> { " SqlClient.", " " });
 
             cReplace.Add(new List<string> { " Overrides ", " override " });
@@ -153,12 +155,15 @@ namespace VBToCSharp
             //cReplace.Add(new List<string> { " Then ", ") " });
 
             cReplace.Add(new List<string> { "Next" + Environment.NewLine, "}" + Environment.NewLine });
+            //cReplace.Add(new List<string> { "Optional ", "" });
+
 
             cReplace.Add(new List<string> { "Try" + Environment.NewLine, "try{" + Environment.NewLine });
             cReplace.Add(new List<string> { "Catch ex As Exception", "}catch(Exception ex){" });
 
-            cReplace.Add(new List<string> { " oFn.", " ofn." });
-
+            cReplace.Add(new List<string> { " ofn.", " oFn." });
+            cReplace.Add(new List<string> { " ofn = new ", " oFn." });
+            
 
 
             //cReplace.Add(new List<string> { "", "" });
@@ -170,6 +175,10 @@ namespace VBToCSharp
             cPull.Add(new List<string> { " Function ", Environment.NewLine, ") As ", Environment.NewLine, " ", "){", "", "1" });
             //cPull.Add(new List<string> { "if(", "){", " = ", "){", "if(", " == ", "){", "0" });
             cPull.Add(new List<string> { "For Each ", " in ", " As ", " in ", "For Each ", "", "", "1" });
+
+            cPull.Add(new List<string> { "Optional ByVal ", " = ", " As ", " = ", "", "", "", "1" });
+            //cPull.Add(new List<string> { "ByVal ", ",", " As ", ",", "", "", "", "1" });
+            
             cPull.Add(new List<string> { "ByVal ", ",", " As ", ",", "", "", "", "1" });
             cPull.Add(new List<string> { "ByVal ", ")", " As ", ")", "", "", "", "1" });
             cPull.Add(new List<string> { "ByRef ", ")", " As ", ")", "", "", "", "1" });
@@ -253,6 +262,10 @@ namespace VBToCSharp
             cBetween.Add(new List<string> { " dr(", ")", " dr[", "]", "0" });
             cBetween.Add(new List<string> { "private ", " const ", "private const ", " ", "0" });
             cBetween.Add(new List<string> { "public ", " const ", "public const ", " ", "0" });
+            cBetween.Add(new List<string> { " event ", "()", " event ", "", "0" });
+
+            cBetween.Add(new List<string> { ".ConfigurationManager.AppSettings(", ")", ".ConfigurationManager.AppSettings[", "]", "0" });
+            
 
 
             cBetween.Add(new List<string> { Environment.NewLine, "'", Environment.NewLine, "//'", "2" });
@@ -260,9 +273,13 @@ namespace VBToCSharp
 
         private void btnConvert_Click(object sender, EventArgs e)
         {
+            txtInput.Focus();
+
             if (txtInput.Text.Length > 0)
             {
                 string buffer = txtInput.Text + Environment.NewLine;
+
+                setClassConstructor(ref buffer);
 
                 #region cReplace
                 foreach (List<string> item in cReplace)
@@ -424,6 +441,9 @@ namespace VBToCSharp
                 buffer = buffer.Replace(" IIf(", " (");
                 buffer = buffer.Replace(" Sub ", " void ");
 
+                buffer = buffer.Replace("sender As object", "object sender");
+                buffer = buffer.Replace("e As EventArgs", "EventArgs e");
+
                 buffer = buffer.Replace("CarregaGradePaginacao[i]", "CarregaGradePaginacao(i)");
 
                 setHandles(ref buffer);
@@ -436,6 +456,7 @@ namespace VBToCSharp
 
         private void btnCopy_Click(object sender, EventArgs e)
         {
+            txtInput.Focus();
             if (txtOutput.Text.Length > 0)
             {
                 Clipboard.SetText(txtOutput.Text);
@@ -455,7 +476,40 @@ namespace VBToCSharp
 
         private void btnClear_Click(object sender, EventArgs e)
         {
+            txtInput.Focus();
             txtInput.Text = txtOutput.Text = lblInfo.Text = string.Empty;
+        }
+
+        //Get and Set ClassName Constructor
+        private void setClassConstructor(ref string buffer)
+        {
+            string className = string.Empty;
+
+            //Get ClassName
+            {
+                string pattern = Regex.Escape("Public Class ") + "(.*?)" + Regex.Escape(" ");
+                Match result = Regex.Match(buffer, pattern, RegexOptions.IgnoreCase);
+                if (result.Success)
+                {
+                    className = result.Groups[1].ToString();
+                }
+                else
+                {
+                    pattern = Regex.Escape("Public Class ") + "(.*?)" + Regex.Escape(Environment.NewLine);
+                    result = Regex.Match(buffer, pattern, RegexOptions.IgnoreCase);
+                    if (result.Success)
+                    {
+                        className = result.Groups[1].ToString();
+                    }
+                }
+            }
+
+            //Replace Sub New for Class Name
+            if (!string.IsNullOrEmpty(className))
+            {
+                buffer = buffer.Replace(" Public Sub New()", " Public Sub " + className + "()");
+            }
+
         }
 
         //Get Linked Functions

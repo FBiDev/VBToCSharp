@@ -1,6 +1,6 @@
 ﻿namespace VBToCSharp
 {
-    partial class Main
+    partial class MainForm
     {
         /// <summary>
         /// Required designer variable.
@@ -110,7 +110,7 @@
             this.btnClear.UseVisualStyleBackColor = true;
             this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
             // 
-            // Main
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -121,7 +121,7 @@
             this.Controls.Add(this.btnConvert);
             this.Controls.Add(this.txtInput);
             this.Controls.Add(this.txtOutput);
-            this.Name = "Main";
+            this.Name = "MainForm";
             this.Text = "VBToCSharp";
             this.ResumeLayout(false);
             this.PerformLayout();
