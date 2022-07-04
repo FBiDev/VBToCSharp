@@ -15,7 +15,7 @@ namespace VBToCSharp
         public MainForm()
         {
             InitializeComponent();
-            //Teste4
+            //Teste5
             //Replace
             cReplace.Add(new List<string> { "Imports ", "using " });
             cReplace.Add(new List<string> { "Public ", "public " });
